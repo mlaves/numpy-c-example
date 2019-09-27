@@ -81,38 +81,38 @@ static PyObject * process_arr_c(PyObject * self, PyObject * args)
 
 static PyObject * get_arr_c(PyObject * self, PyObject * args)
 {
-    PyObject       *out_array;
-    int             nd = 3;
-    long int        dims[nd];
-    unsigned char  *data;
-    const unsigned int   size = 512;
+    PyArrayObject *in_array;
+    int           nd;
+    long int      *shape;
+    unsigned char *data;
     int i;
-
-    data = (unsigned char *)malloc(powl(size, nd)*sizeof(unsigned char));
-    dims[0] = dims[1] = dims[2] = size;
+    
+    // parse single numpy array argument
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &in_array))
+    {
+      printf("Error parsing input\n");
+      Py_RETURN_NONE;
+    }
+    
+    nd = PyArray_NDIM(in_array);
+    shape = PyArray_SHAPE(in_array);
+    data = (unsigned char *)PyArray_DATA(in_array);
+    
+    printf("%u, %u, %u\n", shape[0], shape[1], shape[2]);
 
     // iterate over data and fill it
-    for (i = 0; i < powl(size, nd); i++)
+    for (i = 0; i < shape[0]*shape[1]*shape[2]; i++)
     {
-        data[i] = 1;
+        data[i] = (unsigned char) 1;
     }
 
-    out_array = PyArray_SimpleNewFromData(nd, dims, NPY_UINT8, data);
-    if (out_array == NULL)
-    {
-        printf("Error creating output array\n");
-        return NULL;
-    }
-
-    PyArray_ENABLEFLAGS(out_array, NPY_ARRAY_OWNDATA); // data is freed when array is DECREF'd
-
-    return out_array;
+    Py_RETURN_NONE;
 }
 
 static PyMethodDef cnpyMethods[] =
 {
     { "process_arr", process_arr_c, METH_VARARGS, "docstring" },
-    { "get_arr",     get_arr_c,     METH_NOARGS,  "docstring" },
+    { "get_arr",     get_arr_c,     METH_VARARGS, "docstring" },
     { NULL, NULL, 0, NULL } // sentinel
 };
 
@@ -130,4 +130,3 @@ PyMODINIT_FUNC PyInit_cnpy_c(void)
     import_array();
     return PyModule_Create(&cnpymodule);
 }
-
